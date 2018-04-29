@@ -38,9 +38,22 @@ public class Product {
     }
 
     public void addPriceRule(final Instant startTime, final Instant endTime, long value) {
-
-
         // TODO Здесь вообще все тестовое задание должно быть!
+
+
+
+        final Map.Entry<Instant, Long> prevStartPrice = prices.lowerEntry(startTime);
+        final Map.Entry<Instant, Long> prevEndPrice = prices.lowerEntry(startTime);
+
+
+
+        if (Objects.equals(prevStartPrice, prevEndPrice)) { // Период целиком входит в другой.
+
+        }
+
+        prices.put(endTime, prices.lowerEntry(endTime).getValue());
+
+        prices.subMap(startTime, false, endTime, false).forEach((k, v) -> prices.remove(k)); // Удаляются все записи, попадающиу внутрь нового периода.
     }
 
     public List<PriceCSI> toExternalFormat() { // TODO tests!

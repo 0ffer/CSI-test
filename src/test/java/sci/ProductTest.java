@@ -92,6 +92,21 @@ public class ProductTest {
 
     @Test
     public void mergeThreePricesIntersectsTwoInMiddle() {
+        fail();
+    }
 
+    @Test
+    public void mergeTwoEqualsPricesOneNested() {
+        fail();
+    }
+
+    @Test
+    public void mergeTwoEqualsPricesOneExtendsFromEnd() {
+        fail();
+    }
+
+    @Test
+    public void mergeTwoEqualsPricesOneExtendsBeforeStart() {
+        fail();
     }
 }
