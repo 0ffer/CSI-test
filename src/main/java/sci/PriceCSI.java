@@ -1,6 +1,7 @@
 package sci;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * external model from task.
@@ -61,5 +62,38 @@ public class PriceCSI {
     }
     public void setValue(long value) {
         this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PriceCSI)) return false;
+        PriceCSI priceCSI = (PriceCSI) o;
+        return id == priceCSI.id &&
+                number == priceCSI.number &&
+                depart == priceCSI.depart &&
+                value == priceCSI.value &&
+                Objects.equals(productCode, priceCSI.productCode) &&
+                Objects.equals(begin, priceCSI.begin) &&
+                Objects.equals(end, priceCSI.end);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, productCode, number, depart, begin, end, value);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("PriceCSI{");
+        sb.append("id=").append(id);
+        sb.append(", productCode='").append(productCode).append('\'');
+        sb.append(", number=").append(number);
+        sb.append(", depart=").append(depart);
+        sb.append(", begin=").append(begin);
+        sb.append(", end=").append(end);
+        sb.append(", value=").append(value);
+        sb.append('}');
+        return sb.toString();
     }
 }
