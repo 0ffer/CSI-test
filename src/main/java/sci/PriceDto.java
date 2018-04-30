@@ -4,9 +4,9 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * external model from task.
+ * Модель внешнего представления ценовых правил.
  */
-public class PriceCSI {
+public class PriceDto {
     private long id;
     private String productCode;
     private int number;
@@ -67,15 +67,15 @@ public class PriceCSI {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof PriceCSI)) return false;
-        PriceCSI priceCSI = (PriceCSI) o;
-        return id == priceCSI.id &&
-                number == priceCSI.number &&
-                depart == priceCSI.depart &&
-                value == priceCSI.value &&
-                Objects.equals(productCode, priceCSI.productCode) &&
-                Objects.equals(begin, priceCSI.begin) &&
-                Objects.equals(end, priceCSI.end);
+        if (!(o instanceof PriceDto)) return false;
+        PriceDto priceDto = (PriceDto) o;
+        return id == priceDto.id &&
+                number == priceDto.number &&
+                depart == priceDto.depart &&
+                value == priceDto.value &&
+                Objects.equals(productCode, priceDto.productCode) &&
+                Objects.equals(begin, priceDto.begin) &&
+                Objects.equals(end, priceDto.end);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class PriceCSI {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("PriceCSI{");
+        final StringBuffer sb = new StringBuffer("PriceDto{");
         sb.append("id=").append(id);
         sb.append(", productCode='").append(productCode).append('\'');
         sb.append(", number=").append(number);

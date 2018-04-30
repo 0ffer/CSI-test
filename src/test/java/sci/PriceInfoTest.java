@@ -12,112 +12,88 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 @RunWith(JUnitParamsRunner.class)
-public class ProductTest {
+public class PriceInfoTest {
 
     @Test
-    public void fromExternal() {
-        final PriceCSI exFormat = new PriceCSI();
-        exFormat.setId(1);
-        exFormat.setProductCode("122856");
-        exFormat.setNumber(2);
-        exFormat.setDepart(3);
-        exFormat.setBegin(new Date(10_000));
-        exFormat.setEnd(new Date(20_000));
-        exFormat.setValue(11000);
-
-        final Product expected = new Product();
-        expected.setId(1);
-        expected.setCode("122856");
-        expected.setNumber(2);
-        expected.setDepartment(3);
-        expected.getPrices().put(Instant.ofEpochMilli(10_000), 11000L);
-        expected.getPrices().put(Instant.ofEpochMilli(20_000), null);
-
-        assertEquals(expected, Product.fromExternalFormat(exFormat));
-    }
-
-    @Test
-    public void toExternalSimple() {
-        final Product product = new Product();
-        product.setId(1);
-        product.setCode("122856");
-        product.setNumber(2);
-        product.setDepartment(3);
-        product.getPrices().put(Instant.ofEpochMilli(10_000), 11000L);
-        product.getPrices().put(Instant.ofEpochMilli(20_000), null);
-
-        final PriceCSI expected = new PriceCSI();
-        expected.setId(1);
-        expected.setProductCode("122856");
-        expected.setNumber(2);
-        expected.setDepart(3);
-        expected.setBegin(new Date(10_000));
-        expected.setEnd(new Date(20_000));
-        expected.setValue(11000);
-
-        assertEquals(1, product.toExternalFormat().size());
-        assertEquals(expected, product.toExternalFormat().get(0));
-    }
-
-    @Test
-    @Parameters(method = "testCases")
-    @TestCaseName("test {0}")
+    @Parameters(method = "fromSingle, twoWithBreak, twoWithoutBreak")
+    @TestCaseName("{0}")
     public void paramsTest(String testDesc, List<Pair> initial, List<PriceRule> modificationData, List<Pair> expected) {
-        final Product testProduct = new Product();
+        final PriceInfo testPriceInfo = new PriceInfo();
         for (final Pair pair: initial)
-            testProduct.getPrices().put(pair.time, pair.value);
+            testPriceInfo.getTimeRules().put(pair.time, pair.value);
 
         for (final PriceRule rule: modificationData)
-            testProduct.addPriceRule(rule.startTime, rule.endTime, rule.value);
+            testPriceInfo.addPriceRule(rule.startTime, rule.endTime, rule.value);
 
         final Map<Instant, Long> expectedPrices = new TreeMap<>();
         for (final Pair pair: expected)
             expectedPrices.put(pair.time, pair.value);
 
-        assertEquals(expectedPrices, testProduct.getPrices());
+        assertEquals(expectedPrices, testPriceInfo.getTimeRules());
     }
 
-    private Object testCases() {
+    private Object fromSingle() {
         return new Object[]{
-                new Object[]{"fromEmpty",
+                new Object[]{"Добавление правила в пустой список",
                         Arrays.asList(),
                         Arrays.asList(PriceRule.of(100L, 200L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
-                new Object[]{"mergeTwoPricesNotIntersectsAfterEnd",
+                new Object[]{"Добавление одного правила, не пересекается справа",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(300L, 400L, 500L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 500L), Pair.of(400L, null))},
-                new Object[]{"mergeTwoPricesNotIntersectsBeforeStart",
+                new Object[]{"Добавление одного правила, не пересекается слева",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(50L, 90L, 500L)),
                         Arrays.asList(Pair.of(50L, 500L), Pair.of(90L, null), Pair.of(100L, 100L), Pair.of(200L, null))},
-                new Object[]{"mergeTwoPricesIntersectsBeforeEnd",
+                new Object[]{"Добавление одного правила, пересекается в начале",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(50L, 150L, 500L)),
                         Arrays.asList(Pair.of(50L, 500L), Pair.of(150L, 100L), Pair.of(200L, null))},
-                new Object[]{"mergeTwoPricesIntersectsAfterStart",
+                new Object[]{"Добавление одного правила, пересекается в конце",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 250L, 500L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 500L), Pair.of(250L, null))},
-                new Object[]{"mergeTwoEqualsPricesIntersectsBeforeEnd",
+                new Object[]{"Добавление одного равного по цене правила, пересекается в начале",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(50L, 150L, 100L)),
                         Arrays.asList(Pair.of(50L, 100L), Pair.of(200L, null))},
-                new Object[]{"mergeTwoEqualsPricesIntersectsAfterStart",
+                new Object[]{"Добавление одного равного по цене правила, пересекается в конце",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 250L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(250L, null))},
-                new Object[]{"mergeTwoEqualsPricesOneNested",
+                new Object[]{"Добавление одного равного по цене правила, полностью входит в существующее",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 180L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
-                new Object[]{"mergeTwoEqualsPricesOneOverlaps",
+                new Object[]{"Добавление одного равного по цене правила, полностью поглощает существующее",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 180L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
         };
     }
 
+    private Object twoWithBreak() {
+        return new Object[]{
+                new Object[]{"Добавление правила в промежуток",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 200L), Pair.of(400L, null)),
+                        Arrays.asList(PriceRule.of(220L, 280L, 150L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(220L, 150L), Pair.of(280L, null), Pair.of(300L, 200L), Pair.of(400L, null))},
+        };
+    }
+
+    private Object twoWithoutBreak() {
+        return new Object[]{
+                new Object[]{"Добавление правила с разбиением на три",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, 200L), Pair.of(300L, null)),
+                        Arrays.asList(PriceRule.of(150L, 250L, 150L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 150L), Pair.of(250L, 200L), Pair.of(300L, null))},
+        };
+    }
+
+    /**
+     * Класс для определения правил внутреннего представления.
+     */
     static class Pair {
         Instant time;
         Long value;
@@ -130,6 +106,9 @@ public class ProductTest {
         }
     }
 
+    /**
+     * Класс для определения правил внешнего представления.
+     */
     static class PriceRule {
         Instant startTime;
         Instant endTime;
