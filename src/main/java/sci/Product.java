@@ -31,29 +31,23 @@ public class Product {
         result.number = externalFormatPrice.getNumber();
         result.department = externalFormatPrice.getDepart();
 
-        result.prices.put(externalFormatPrice.getBegin().toInstant(), externalFormatPrice.getValue());
-        result.prices.put(externalFormatPrice.getEnd().toInstant(), null);
-
         return result;
     }
 
     public void addPriceRule(final Instant startTime, final Instant endTime, long value) {
-        // TODO Здесь вообще все тестовое задание должно быть!
-
-
-
-        final Map.Entry<Instant, Long> prevStartPrice = prices.lowerEntry(startTime);
-        final Map.Entry<Instant, Long> prevEndPrice = prices.lowerEntry(startTime);
-
-
-
-        if (Objects.equals(prevStartPrice, prevEndPrice)) { // Период целиком входит в другой.
-
+        final Map.Entry<Instant, Long> prevEndPrice = prices.lowerEntry(endTime);
+        if (prevEndPrice == null) {
+            prices.put(endTime, null);
+        } else if (prevEndPrice.getValue() == null || prevEndPrice.getValue() != value) {
+            prices.put(endTime, prevEndPrice.getValue());
         }
 
-        prices.put(endTime, prices.lowerEntry(endTime).getValue());
+        final Map.Entry<Instant, Long> prevStartPrice = prices.lowerEntry(startTime);
+        if (prevStartPrice == null || prevStartPrice.getValue() == null || prevStartPrice.getValue() != value) {
+            prices.put(startTime, value);
+        }
 
-        prices.subMap(startTime, false, endTime, false).forEach((k, v) -> prices.remove(k)); // Удаляются все записи, попадающиу внутрь нового периода.
+        prices.subMap(startTime, false, endTime, false).forEach((k, v) -> prices.remove(k)); // Удаляются все записи, попадающие внутрь нового периода.
     }
 
     public List<PriceCSI> toExternalFormat() { // TODO tests!

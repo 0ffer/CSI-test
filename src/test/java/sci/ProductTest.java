@@ -1,14 +1,17 @@
 package sci;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.time.Instant;
-import java.util.Date;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
+@RunWith(JUnitParamsRunner.class)
 public class ProductTest {
 
     @Test
@@ -31,7 +34,6 @@ public class ProductTest {
         expected.getPrices().put(Instant.ofEpochMilli(20_000), null);
 
         assertEquals(expected, Product.fromExternalFormat(exFormat));
-        assertEquals(expected.getPrices(), Product.fromExternalFormat(exFormat).getPrices());
     }
 
     @Test
@@ -58,55 +60,87 @@ public class ProductTest {
     }
 
     @Test
-    public void mergeTwoPricesNotIntersectsAfterEnd() {
+    @Parameters(method = "testCases")
+    @TestCaseName("test {0}")
+    public void paramsTest(String testDesc, List<Pair> initial, List<PriceRule> modificationData, List<Pair> expected) {
         final Product testProduct = new Product();
+        for (final Pair pair: initial)
+            testProduct.getPrices().put(pair.time, pair.value);
 
-        testProduct.getPrices().put(Instant.ofEpochSecond(100), 100L);
-        testProduct.getPrices().put(Instant.ofEpochSecond(200), null);
+        for (final PriceRule rule: modificationData)
+            testProduct.addPriceRule(rule.startTime, rule.endTime, rule.value);
 
-        testProduct.addPriceRule(Instant.ofEpochSecond(300), Instant.ofEpochSecond(400), 500L);
+        final Map<Instant, Long> expectedPrices = new TreeMap<>();
+        for (final Pair pair: expected)
+            expectedPrices.put(pair.time, pair.value);
 
-        final Map<Instant, Long> expected = new TreeMap<>();
-        expected.put(Instant.ofEpochSecond(100), 100L);
-        expected.put(Instant.ofEpochSecond(200), null);
-        expected.put(Instant.ofEpochSecond(300), 500L);
-        expected.put(Instant.ofEpochSecond(400), null);
-
-        assertEquals(expected, testProduct.getPrices());
+        assertEquals(expectedPrices, testProduct.getPrices());
     }
 
-    @Test
-    public void mergeTwoPricesNotIntersectsBeforeStart() {
-        fail();
+    private Object testCases() {
+        return new Object[]{
+                new Object[]{"fromEmpty",
+                        Arrays.asList(),
+                        Arrays.asList(PriceRule.of(100L, 200L, 100L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
+                new Object[]{"mergeTwoPricesNotIntersectsAfterEnd",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(300L, 400L, 500L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 500L), Pair.of(400L, null))},
+                new Object[]{"mergeTwoPricesNotIntersectsBeforeStart",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(50L, 90L, 500L)),
+                        Arrays.asList(Pair.of(50L, 500L), Pair.of(90L, null), Pair.of(100L, 100L), Pair.of(200L, null))},
+                new Object[]{"mergeTwoPricesIntersectsBeforeEnd",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(50L, 150L, 500L)),
+                        Arrays.asList(Pair.of(50L, 500L), Pair.of(150L, 100L), Pair.of(200L, null))},
+                new Object[]{"mergeTwoPricesIntersectsAfterStart",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(150L, 250L, 500L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 500L), Pair.of(250L, null))},
+                new Object[]{"mergeTwoEqualsPricesIntersectsBeforeEnd",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(50L, 150L, 100L)),
+                        Arrays.asList(Pair.of(50L, 100L), Pair.of(200L, null))},
+                new Object[]{"mergeTwoEqualsPricesIntersectsAfterStart",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(150L, 250L, 100L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(250L, null))},
+                new Object[]{"mergeTwoEqualsPricesOneNested",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(150L, 180L, 100L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
+                new Object[]{"mergeTwoEqualsPricesOneOverlaps",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
+                        Arrays.asList(PriceRule.of(150L, 180L, 100L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
+        };
     }
 
-    @Test
-    public void mergeTwoPricesIntersectsBeforeEnd() {
-        fail();
+    static class Pair {
+        Instant time;
+        Long value;
+
+        static Pair of(Long seconds, Long value) {
+            Pair res = new Pair();
+            res.time = Instant.ofEpochSecond(seconds);
+            res.value = value;
+            return res;
+        }
     }
 
-    @Test
-    public void mergeTwoPricesIntersectsAfterStart() {
-        fail();
-    }
+    static class PriceRule {
+        Instant startTime;
+        Instant endTime;
+        Long value;
 
-    @Test
-    public void mergeThreePricesIntersectsTwoInMiddle() {
-        fail();
-    }
-
-    @Test
-    public void mergeTwoEqualsPricesOneNested() {
-        fail();
-    }
-
-    @Test
-    public void mergeTwoEqualsPricesOneExtendsFromEnd() {
-        fail();
-    }
-
-    @Test
-    public void mergeTwoEqualsPricesOneExtendsBeforeStart() {
-        fail();
+        static PriceRule of(Long startSeconds, Long endSeconds, Long value) {
+            PriceRule res = new PriceRule();
+            res.startTime = Instant.ofEpochSecond(startSeconds);
+            res.endTime = Instant.ofEpochSecond(endSeconds);
+            res.value = value;
+            return res;
+        }
     }
 }
