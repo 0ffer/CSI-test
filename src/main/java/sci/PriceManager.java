@@ -1,9 +1,11 @@
 package sci;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * Методы для работы с ценами.
+ *
+ * FIXME По тестовому заданию не понятно, как работать с идентификаторами цен.
  */
 public final class PriceManager {
 
@@ -14,7 +16,7 @@ public final class PriceManager {
      * @param newPrices Новые ценовые правила.
      * @return Список объединенных ценовых правил.
      */
-    private static List<PriceDto> mergePrices(final List<PriceDto> currentPrices, final List<PriceDto> newPrices) {
+    public static List<PriceDto> mergePrices(final List<PriceDto> currentPrices, final List<PriceDto> newPrices) {
         PriceRepository repo = new PriceRepository();
 
         currentPrices.forEach(repo::processPriceDto);

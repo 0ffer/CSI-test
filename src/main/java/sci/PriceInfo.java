@@ -1,9 +1,10 @@
 package sci;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -12,7 +13,6 @@ import java.util.TreeMap;
  * Для простоты описательной модели не произведена декомпозиция на отдельные сущности отдела, продукта и ценовых правил.
  */
 final class PriceInfo {
-    private long id;
     private String code;
     private int number;
     private int department;
@@ -47,7 +47,7 @@ final class PriceInfo {
          * Окончание не ставится, если:
          * 1. цена предыдущего периода равна цене нового периода.
          */
-        final Map.Entry<Instant, Long> endPrevPrice = timeRules.lowerEntry(endTime);
+        final Map.Entry<Instant, Long> endPrevPrice = timeRules.floorEntry(endTime);
         if (endPrevPrice == null) {
             timeRules.put(endTime, null);
         } else if (endPrevPrice.getValue() == null || endPrevPrice.getValue() != value) {
@@ -65,20 +65,14 @@ final class PriceInfo {
          * Начало не ставится, если:
          * 1. цена предыдущего периода равна цене нового периода.
          */
-        final Map.Entry<Instant, Long> startPrevPrice = timeRules.lowerEntry(startTime);
+        final Map.Entry<Instant, Long> startPrevPrice = timeRules.floorEntry(startTime);
         if (startPrevPrice == null || startPrevPrice.getValue() == null || startPrevPrice.getValue() != value) {
             timeRules.put(startTime, value);
         }
 
         // Все промежуточные периоды всегда затираются.
-        timeRules.subMap(startTime, false, endTime, false).forEach((k, v) -> timeRules.remove(k)); // Удаляются все записи, попадающие внутрь нового периода.
-    }
-
-    public long getId() {
-        return id;
-    }
-    public void setId(long id) {
-        this.id = id;
+        List<Instant> keysToDelete = new ArrayList<>(timeRules.subMap(startTime, false, endTime, false).keySet());
+        keysToDelete.forEach(time -> timeRules.remove(time));
     }
 
     public String getCode() {

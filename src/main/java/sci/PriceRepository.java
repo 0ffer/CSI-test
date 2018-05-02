@@ -2,7 +2,12 @@ package sci;
 
 import java.sql.Date;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -19,7 +24,6 @@ final class PriceRepository {
      */
     private static PriceInfo getPriceInfoFromDto(PriceDto priceDto) {
         final PriceInfo priceInfo = new PriceInfo();
-        priceInfo.setId(priceDto.getId());
         priceInfo.setCode(priceDto.getProductCode());
         priceInfo.setDepartment(priceDto.getDepart());
         priceInfo.setNumber(priceDto.getNumber());
@@ -33,7 +37,7 @@ final class PriceRepository {
      * @return Числовой указатель на цену.
      */
     private static int priceInfoHash(final PriceDto priceDto) {
-        return Objects.hash(priceDto.getId(), priceDto.getProductCode(), priceDto.getDepart(), priceDto.getNumber());
+        return Objects.hash(priceDto.getProductCode(), priceDto.getDepart(), priceDto.getNumber());
     }
 
     /**
@@ -59,7 +63,6 @@ final class PriceRepository {
             }
 
             dtoWithoutEndTime = new PriceDto();
-            dtoWithoutEndTime.setId(priceInfo.getId());
             dtoWithoutEndTime.setProductCode(priceInfo.getCode());
             dtoWithoutEndTime.setNumber(priceInfo.getNumber());
             dtoWithoutEndTime.setDepart(priceInfo.getDepartment());
@@ -76,8 +79,13 @@ final class PriceRepository {
      * @param priceDto Ценовое правило внешнего формата.
      */
     void processPriceDto(final PriceDto priceDto) {
-        prices.getOrDefault(priceInfoHash(priceDto), getPriceInfoFromDto(priceDto)).
-                addPriceRule(priceDto.getBegin().toInstant(), priceDto.getEnd().toInstant(), priceDto.getValue());
+        PriceInfo priceInfo = prices.get(priceInfoHash(priceDto));
+        if (priceInfo == null) {
+            priceInfo = getPriceInfoFromDto(priceDto);
+            prices.put(priceInfoHash(priceDto), priceInfo);
+        }
+
+        priceInfo.addPriceRule(priceDto.getBegin().toInstant(), priceDto.getEnd().toInstant(), priceDto.getValue());
     }
 
     /**
@@ -90,7 +98,7 @@ final class PriceRepository {
                 .flatMap(Collection::stream).collect(Collectors.toList());
     }
 
-    public Map<Integer, PriceInfo> getPrices() {
+    Map<Integer, PriceInfo> getPrices() {
         return prices;
     }
 }

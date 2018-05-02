@@ -7,15 +7,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(JUnitParamsRunner.class)
 public class PriceInfoTest {
 
     @Test
-    @Parameters(method = "fromSingle, twoWithBreak, twoWithoutBreak")
+    @Parameters(method = "testsData")
     @TestCaseName("{0}")
     public void paramsTest(String testDesc, List<Pair> initial, List<PriceRule> modificationData, List<Pair> expected) {
         final PriceInfo testPriceInfo = new PriceInfo();
@@ -32,62 +35,82 @@ public class PriceInfoTest {
         assertEquals(expectedPrices, testPriceInfo.getTimeRules());
     }
 
-    private Object fromSingle() {
+    /**
+     * "..." - описание промежутка между точками.
+     * "M" - описание промежутка, модифицирующего существующие цены.
+     * "A,B,C" - описание существующих цен.
+     *
+     * "(B-100" - описание начала промежутка со значением стоимости.
+     * "B)" - описание окончания промежутка.
+     *
+     * FIXME Считаю, что тестировать отношения с большим количеством участников, чем 2 начальных и 1 модифицирующий, не имеет смысла. Т.к. Все случаи с большим количеством участников можно разложить на более малые.
+     */
+    private Object testsData() {
         return new Object[]{
-                new Object[]{"Добавление правила в пустой список",
+                new Object[]{"...(M-100...M)...",
                         Arrays.asList(),
                         Arrays.asList(PriceRule.of(100L, 200L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
-                new Object[]{"Добавление одного правила, не пересекается справа",
+                new Object[]{"...(A-100...A)...(M-500...M)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(300L, 400L, 500L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 500L), Pair.of(400L, null))},
-                new Object[]{"Добавление одного правила, не пересекается слева",
+                new Object[]{"...(M-500...M)...(A-100...A)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(50L, 90L, 500L)),
                         Arrays.asList(Pair.of(50L, 500L), Pair.of(90L, null), Pair.of(100L, 100L), Pair.of(200L, null))},
-                new Object[]{"Добавление одного правила, пересекается в начале",
+                new Object[]{"...(M-500...(A-100...M)...A)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(50L, 150L, 500L)),
                         Arrays.asList(Pair.of(50L, 500L), Pair.of(150L, 100L), Pair.of(200L, null))},
-                new Object[]{"Добавление одного правила, пересекается в конце",
+                new Object[]{"...(A-100...(M-500...A)...M)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 250L, 500L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 500L), Pair.of(250L, null))},
-                new Object[]{"Добавление одного равного по цене правила, пересекается в начале",
+                new Object[]{"...(M-100...(A-100...M)...A)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(50L, 150L, 100L)),
                         Arrays.asList(Pair.of(50L, 100L), Pair.of(200L, null))},
-                new Object[]{"Добавление одного равного по цене правила, пересекается в конце",
+                new Object[]{"...(A-100...(M-100...A)...M)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 250L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(250L, null))},
-                new Object[]{"Добавление одного равного по цене правила, полностью входит в существующее",
+                new Object[]{"...(A-100...(M-100...M)...A)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 180L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
-                new Object[]{"Добавление одного равного по цене правила, полностью поглощает существующее",
+                new Object[]{"...(M-100...(A-100...A)...M)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null)),
                         Arrays.asList(PriceRule.of(150L, 180L, 100L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null))},
-        };
-    }
-
-    private Object twoWithBreak() {
-        return new Object[]{
-                new Object[]{"Добавление правила в промежуток",
+                new Object[]{"...(A-100...A)...(M-150...M)...(B-200...B)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 200L), Pair.of(400L, null)),
                         Arrays.asList(PriceRule.of(220L, 280L, 150L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(220L, 150L), Pair.of(280L, null), Pair.of(300L, 200L), Pair.of(400L, null))},
-        };
-    }
-
-    private Object twoWithoutBreak() {
-        return new Object[]{
-                new Object[]{"Добавление правила с разбиением на три",
+                new Object[]{"...(A-100...(M-150...A)...(B-200...M)...B)...",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 200L), Pair.of(400L, null)),
+                        Arrays.asList(PriceRule.of(150L, 350L, 150L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 150L), Pair.of(350L, 200L), Pair.of(400L, null))},
+                new Object[]{"...(A-100...(M-100...A)...(B-100...M)...B)...",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 100L), Pair.of(400L, null)),
+                        Arrays.asList(PriceRule.of(150L, 350L, 100L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(400L, null))},
+                new Object[]{"...(A-100...(M-100...A)(B-100...M)...B)...",
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, 200L), Pair.of(300L, null)),
                         Arrays.asList(PriceRule.of(150L, 250L, 150L)),
                         Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 150L), Pair.of(250L, 200L), Pair.of(300L, null))},
+                new Object[]{"...(A-100...(M-150...A)(B-100...B)...M)...",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, 200L), Pair.of(300L, null)),
+                        Arrays.asList(PriceRule.of(150L, 500L, 150L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(150L, 150L), Pair.of(500L, null))},
+                new Object[]{"...(A-100...(M-100...A)(B-100...M)B)...",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 100L), Pair.of(400L, null)),
+                        Arrays.asList(PriceRule.of(150L, 400L, 100L)),
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(400L, null))},
+                new Object[]{"...(A-100(M-150...A)(B-200...M)B)...",
+                        Arrays.asList(Pair.of(100L, 100L), Pair.of(200L, null), Pair.of(300L, 200L), Pair.of(400L, null)),
+                        Arrays.asList(PriceRule.of(100L, 400L, 150L)),
+                        Arrays.asList(Pair.of(100L, 150L), Pair.of(400L, null))},
         };
     }
 
