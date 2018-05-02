@@ -34,10 +34,11 @@ public class PriceRepositoryTest {
         expected.getTimeRules().put(Instant.ofEpochMilli(20_000), null);
 
         assertEquals(1, repo.getPrices().size());
-        assertEquals("122856", repo.getPrices().get(0).getCode());
-        assertEquals(2, repo.getPrices().get(0).getNumber());
-        assertEquals(3, repo.getPrices().get(0).getDepartment());
-        assertEquals(expected.getTimeRules(), repo.getPrices().get(0).getTimeRules());
+        PriceInfo priceInfo = repo.getPrices().values().stream().findFirst().get();
+        assertEquals("122856", priceInfo.getCode());
+        assertEquals(2, priceInfo.getNumber());
+        assertEquals(3, priceInfo.getDepartment());
+        assertEquals(expected.getTimeRules(), priceInfo.getTimeRules());
     }
 
     @Test
